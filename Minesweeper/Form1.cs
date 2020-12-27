@@ -15,20 +15,55 @@ namespace Minesweeper
         int mineCount;
         int flagCount;
         int minesFlagged;
+        int difficulty;
 
         public int Height { get; set; }
         public int Width { get; set; }
-        public Form1()
+        public Form1(int difficulty = 0)
         {
-            Height = 8;
-            Width = 10;
+            this.difficulty = difficulty;
+            setHeightWidth();
             mineCount = (int)(0.125 * Height * Width);
             flagCount = mineCount;
 
             InitializeComponent();
         }
 
+        private void setHeightWidth()
+        {
+            switch (this.difficulty)
+            {
+                case 0:
+                    Height = 8;
+                    Width = 10;
+                    break;
+                case 1:
+                    Height = 14;
+                    Width = 18;
+                    break;
+                case 2:
+                    Height = 20;
+                    Width = 24;
+                    break;
+                default:
+                    Height = 8;
+                    Width = 10;
+                    break;
+            }
+        }
 
+        private void button1_click(object sender, EventArgs e)
+        {
+            ToolStripButton b = (ToolStripButton)sender;
+            int tag = (int)b.Tag;
+            if (this.difficulty != tag)
+            {
+                Form1 nextForm = new Form1(tag);
+                this.Hide();
+                nextForm.ShowDialog();
+                this.Close();
+            }
+        }
 
         private void button2_Click(object sender, MouseEventArgs e)
         {
@@ -46,8 +81,15 @@ namespace Minesweeper
                 else
                 {
                     buttonAction(b, l, e);
+                    b.IsAccessible = false;
                 }
-            }           
+            }
+            else
+            {
+
+            }
+            
+
 
         }
 
@@ -81,6 +123,9 @@ namespace Minesweeper
         //re-enable button click to unFlag a button 
         //create flag press count as well as count if mine is flagged
         //if all mines flagged enter gameWinMessage method
+        // create game win message
+        //move mines that are within first click -- maybe
+
         private void buttonAction(Button b, Location l, MouseEventArgs e)
         {
             if (e.Button == MouseButtons.Left)
@@ -164,9 +209,44 @@ namespace Minesweeper
 
             return mines[height,width];
         }
+
+        private void createDifficultySelect()
+        {
+            this.toolStrip = new ToolStrip();
+            difficultyButton = new ToolStripDropDownButton();
+            ToolStripDropDown dropDown = new ToolStripDropDown();
+            this.difficultyButton.Text = "Difficulty";
+            this.difficultyButton.Name = "Difficulty";
+            this.difficultyButton.DropDown = dropDown;
+            this.difficultyButton.DropDownDirection = ToolStripDropDownDirection.BelowRight;
+            this.difficultyButton.ShowDropDownArrow = true;
+
+            // Declare three buttons, set their foreground color and text, 
+            // and add the buttons to the drop-down.
+            easy = new ToolStripButton();
+            easy.Text = "Easy";
+            easy.Tag = 0;
+         
+            medium = new ToolStripButton();
+            medium.Text = "Medium";
+            medium.Tag = 1;
+
+            difficult = new ToolStripButton();
+            difficult.Text = "Hard";
+            difficult.Tag = 2;
+
+            difficult.Click += new EventHandler(button1_click);
+            medium.Click += new EventHandler(button1_click); 
+            easy.Click += new EventHandler(button1_click);
+            
+
+            difficultyButton.DropDownItems.AddRange(new ToolStripButton[]
+                {difficult ,medium, easy });
+
+            toolStrip.Items.Add(difficultyButton);
+        }
+
+
     }
-
-    
-
 
 }

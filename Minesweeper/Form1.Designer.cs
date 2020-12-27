@@ -33,19 +33,47 @@ namespace Minesweeper
         /// </summary>
         private void InitializeComponent()
         {
+            this.splitContainer = new System.Windows.Forms.SplitContainer();
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             this.buttons = new Button[Height, Width];
             this.mines = new bool[Height, Width];
 
             createMines();
             calculateValues();
+            createDifficultySelect();
 
             for (int c = 0; c < Height; c++)
                 for (int r = 0; r < Width; r++)
                     this.buttons[c, r] = new System.Windows.Forms.Button();
 
+            this.splitContainer.Panel2.SuspendLayout();
+            this.splitContainer.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
             this.SuspendLayout();
+
+            //
+            //Split Container
+            //
+            this.splitContainer.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.splitContainer.IsSplitterFixed = true;
+            this.splitContainer.Location = new System.Drawing.Point(0, 0);
+            this.splitContainer.Orientation = System.Windows.Forms.Orientation.Vertical;
+
+            //
+            //Split panel 1
+            //
+
+            this.splitContainer.Panel1.BackColor = System.Drawing.Color.Navy;
+            this.splitContainer.Panel1.Controls.Add(this.toolStrip);
+            this.splitContainer.TabIndex = 0;
+
+            //
+            //Split panel 2
+            //
+            this.splitContainer.Panel1.AutoScroll = true;
+            this.splitContainer.Panel2.Controls.Add(this.tableLayoutPanel1);
+
+
             // 
             // tableLayoutPanel1
             // 
@@ -94,13 +122,18 @@ namespace Minesweeper
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(13F, 32F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1392, 1213);
-            this.Controls.Add(this.tableLayoutPanel1);
+            this.ClientSize = new System.Drawing.Size(1492, 1313);
+            this.Controls.Add(this.splitContainer);
             this.Name = "Form1";
             this.Text = "Form1";
+            this.splitContainer.Panel1.ResumeLayout(false);
+            this.splitContainer.Panel2.ResumeLayout(false);
+            this.splitContainer.Panel1.PerformLayout();
+            this.splitContainer.Panel2.PerformLayout();
+            this.splitContainer.ResumeLayout(false);
             this.tableLayoutPanel1.ResumeLayout(false);
+            this.tableLayoutPanel1.PerformLayout();
             this.ResumeLayout(false);
-            this.PerformLayout();
 
         }
 
@@ -163,6 +196,10 @@ namespace Minesweeper
         }
 
         #endregion
-        private System.Windows.Forms.TableLayoutPanel tableLayoutPanel1;
+        private SplitContainer splitContainer;
+        private TableLayoutPanel tableLayoutPanel1;
+        private ToolStrip toolStrip;
+        private ToolStripDropDownButton difficultyButton;
+        private ToolStripButton easy, medium, difficult;
     }
 }
