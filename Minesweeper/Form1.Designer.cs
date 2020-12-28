@@ -37,10 +37,20 @@ namespace Minesweeper
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             this.buttons = new Button[Height, Width];
             this.mines = new bool[Height, Width];
+            this.timer = new System.Windows.Forms.Timer();
+            this.timerBox = new Label();
+            this.time = new System.Windows.Forms.Label();
+            this.startButton = new Button();
+            this.flagsLabel = new Label();
+            this.flagsLeft = new Label();
 
-            createMines();
-            calculateValues();
-            createDifficultySelect();
+            CreateMines();
+            CalculateValues();
+            CreateDifficultySelect();
+            CreateTimer();
+            FlagLabels();
+            CreateStartGame();
+            
 
             for (int c = 0; c < Height; c++)
                 for (int r = 0; r < Width; r++)
@@ -65,7 +75,13 @@ namespace Minesweeper
 
             this.splitContainer.Panel1.BackColor = System.Drawing.Color.Navy;
             this.splitContainer.Panel1.Controls.Add(this.toolStrip);
+            this.splitContainer.Panel1.Controls.Add(this.timerBox);
+            this.splitContainer.Panel1.Controls.Add(this.time);
+            this.splitContainer.Panel1.Controls.Add(this.startButton);
+            this.splitContainer.Panel1.Controls.Add(this.flagsLabel);
+            this.splitContainer.Panel1.Controls.Add(this.flagsLeft);
             this.splitContainer.TabIndex = 0;
+            this.splitContainer.Panel1.BackColor = Color.MediumSeaGreen;
 
             //
             //Split panel 2
@@ -134,10 +150,13 @@ namespace Minesweeper
             this.tableLayoutPanel1.ResumeLayout(false);
             this.tableLayoutPanel1.PerformLayout();
             this.ResumeLayout(false);
+            this.tableLayoutPanel1.Enabled = false;
 
         }
 
-        private void calculateValues()
+        
+
+        private void CalculateValues()
         {
             values = new int[Height, Width];
             ForEachCell((i, j) =>
@@ -177,7 +196,7 @@ namespace Minesweeper
             return y >= 0 && y < Height && x >= 0 && x < Width;
         }
 
-        private void createMines()
+        private void CreateMines()
         {
             int numOfMines = mineCount;
             mines = new bool[Height, Width];
@@ -201,5 +220,11 @@ namespace Minesweeper
         private ToolStrip toolStrip;
         private ToolStripDropDownButton difficultyButton;
         private ToolStripButton easy, medium, difficult;
+        private Timer timer;
+        private Label timerBox;
+        private Label time;
+        private Button startButton;
+        private Label flagsLabel;
+        private Label flagsLeft;
     }
 }

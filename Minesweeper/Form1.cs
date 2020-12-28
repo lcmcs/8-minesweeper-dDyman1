@@ -4,6 +4,15 @@ using System.Windows.Forms;
 
 namespace Minesweeper
 {
+
+    //check all mines flagged if flag == 0
+    //update flagsLeft text box with increments or decrements
+    // if all mines flagged..game win
+    //for all zero boxes directly connected to first click or zero...
+    //flip till numbered box is hit. While loop..?
+    //Start button push is requisite for game play. 
+    //Message box or prompt type if table is interacted with while disabled 
+    //Let me know if I should implement above^ (so player hits start)
     public partial class Form1 : Form
     {
         private Button[,] buttons;
@@ -11,27 +20,31 @@ namespace Minesweeper
         bool[,] mines;
         public int[,] values;
         private Image bomb = Image.FromFile(@"C:\Users\dovdm\Downloads\bomb.png");
-        private bool firstClick = false;
+        private bool firstClick = true;
         int mineCount;
         int flagCount;
         int minesFlagged;
         int difficulty;
+        //Time
+        int seconds = 0;
+        int minutes = 0;
+
 
         public int Height { get; set; }
         public int Width { get; set; }
         public Form1(int difficulty = 0)
         {
             this.difficulty = difficulty;
-            setHeightWidth();
+            SetHeightWidth();
             mineCount = (int)(0.125 * Height * Width);
             flagCount = mineCount;
-
+            minesFlagged = 0;
             InitializeComponent();
         }
 
-        private void setHeightWidth()
+        private void SetHeightWidth()
         {
-            switch (this.difficulty)
+            switch (difficulty)
             {
                 case 0:
                     Height = 8;
@@ -51,17 +64,50 @@ namespace Minesweeper
                     break;
             }
         }
+        private void CreateTimer()
+        {
+            // 
+            // timer
+            // 
+            timer.Interval = 1000;
+            timer.Tick += new EventHandler(timer_handler);
+
+            //
+            //timerBox
+            //
+
+            timerBox.IsAccessible = false;
+            timerBox.Location = new Point(140, 125);
+            timerBox.Name = "timerBox";
+            timerBox.Size = new Size(150, 200);
+            timerBox.Font = new Font("Arial", 15, FontStyle.Regular);
+            timerBox.RightToLeft = RightToLeft.Yes;
+            timerBox.BorderStyle = BorderStyle.None;
+            timerBox.BackColor = Color.MediumSeaGreen;
+            timerBox.ForeColor = Color.Black;
+            //this.timerBox.TabIndex = 17;
+            // 
+            // timeLabel
+            // 
+            time.AutoSize = true;
+            time.Location = new System.Drawing.Point(0, 125);
+            time.Name = "time";
+            time.AutoSize = true;
+            time.Font = new Font("Arial", 15, FontStyle.Regular);
+            time.TabIndex = 18;
+            time.Text = "Timer:";
+        }
 
         private void button1_click(object sender, EventArgs e)
         {
             ToolStripButton b = (ToolStripButton)sender;
             int tag = (int)b.Tag;
-            if (this.difficulty != tag)
+            if (difficulty != tag)
             {
                 Form1 nextForm = new Form1(tag);
-                this.Hide();
+                Hide();
                 nextForm.ShowDialog();
-                this.Close();
+                Close();
             }
         }
 
@@ -70,92 +116,159 @@ namespace Minesweeper
             Button b = (Button)sender;
             Location l = (Location)b.Tag;
 
-            if (b.IsAccessible)
+            if (e.Button == MouseButtons.Right)
             {
-                if (!firstClick || values[l.getColumn(), l.getRow()] == 0) {
-                    flipFirstPanels(l);
-                    b.BackColor = Color.LightSlateGray;
-                    firstClick = true;
-                    b.IsAccessible = false;
+                MarkAsFlag(b, l);
+            }
+            else if (b.IsAccessible)
+            {
+
+                if (firstClick)
+                {
+                    FlipFirstPanels(b, l, e);
+                    firstClick = false;
                 }
                 else
                 {
-                    buttonAction(b, l, e);
-                    b.IsAccessible = false;
+                    if (b.BackgroundImage != null)
+                    {
+                        //Do nothing because a flagged space cannot be interacted with, but is also not "inaccessible" as a space
+                    }
+                    else
+                    {
+                        FlipPanel(b, l, e);
+                    }
                 }
+            }
+        }
+
+        private void FlipFirstPanels(Button b, Location l, MouseEventArgs e)
+        {
+            if (IsMine(l.getColumn(), l.getRow()))
+            {
+                CreateMines();
+                CalculateValues();
+                FlipFirstPanels(b, l, e);
+            }
+            int val = values[l.getColumn(), l.getRow()];
+            //Make panel inaccessible / "flipped"
+            buttons[l.getColumn(), l.getRow()].BackColor = Color.LightSlateGray;
+            buttons[l.getColumn(), l.getRow()].IsAccessible = false;
+            FlipNeighboringPanels(l.getColumn(), l.getRow());
+            firstClick = false;
+        }
+
+        private void MarkAsFlag(Button b, Location l)
+        {
+            if (b.BackgroundImage != null)
+            {
+                b.BackgroundImage = null;
+                flagCount++;
+                flagsLeft.Text = "" + flagCount;
             }
             else
             {
-
+                b.BackgroundImage = new Bitmap(redFlag, b.Size); //Mark as a flag
+                flagCount--;
+                flagsLeft.Text = ""+ flagCount;
+                if (IsMine(l.getColumn(), l.getRow()))
+                {
+                    minesFlagged++;
+                }
             }
-            
-
-
         }
 
-        private void flipFirstPanels(Location l)
+        private void FlipPanel(Button b, Location l, MouseEventArgs e)
         {
-            ForEachNeighbor(l.getColumn(), l.getRow(), (i1, j1)=>{
-                int v = values[i1, j1];
-                Button b = this.buttons[i1, j1];
-                if ( v < 1)
+            if (b.IsAccessible)
+            {
+                if (IsMine(l.getColumn(), l.getRow()))
                 {
-                    if (b.IsAccessible)
-                    {
-                        b.BackColor = Color.LightSlateGray;
-                        b.IsAccessible = false;
-                        flipFirstPanels(new Location(i1, j1));
-                    }
+                    Explosion();
                 }
-                if (v <= 2 && v > 0 )
+                else
                 {
-                    if (b.IsAccessible)
+                    int val = values[l.getColumn(), l.getRow()];
+                    //Make panel inaccessible / "flipped"
+                    buttons[l.getColumn(), l.getRow()].ForeColor = GetNumberColor(val);
+                    buttons[l.getColumn(), l.getRow()].Text = val.ToString();
+                    buttons[l.getColumn(), l.getRow()].BackColor = Color.LightSlateGray;
+                    buttons[l.getColumn(), l.getRow()].IsAccessible = false;
+                    CheckEndGame();
+                }
+            }
+        }
+
+        private void FlipNeighboringPanels(int col, int row)
+        {
+            int val;
+
+            //Flip panels that are buttons neighbors through recursion
+            ForEachNeighbor(col, row, (i1, j1) => {
+                Button b = buttons[i1, j1];
+                val = values[i1, j1];
+                if (!IsMine(i1, j1) && b.IsAccessible && val < 2)
+                {
+                    if (val == 0)
                     {
-                        b.BackColor = Color.LightSlateGray;
-                        b.ForeColor = getNumberColor(v);
-                        b.Text = v.ToString();
-                        b.IsAccessible = false;
+                        buttons[i1, j1].ForeColor = GetNumberColor(val);
+                        buttons[i1, j1].Text = val.ToString();
                     }
+                    buttons[i1, j1].BackColor = Color.LightSlateGray;
+                    buttons[i1, j1].IsAccessible = false;
                 }
             });
         }
-
-        //re-enable button click to unFlag a button 
-        //create flag press count as well as count if mine is flagged
-        //if all mines flagged enter gameWinMessage method
-        // create game win message
-        //move mines that are within first click -- maybe
-
-        private void buttonAction(Button b, Location l, MouseEventArgs e)
+        /*
+         *Check if all flags that are placed cover all bombs
+         */
+        private bool AllFlagsProper()
         {
-            if (e.Button == MouseButtons.Left)
-            {
-
-                if (!isMine(l.getRow(), l.getColumn()))
-                {
-                    int val = values[l.getColumn(), l.getRow()];
-                    b.ForeColor = getNumberColor(val);
-                    b.Text = val.ToString();
-                    b.BackColor = Color.LightSlateGray;
-                }
-                else
-                {
-
-                    showAllBombs();
-                    endGameMessage();
-
-                }
-            }
-            else
-            {
-                b.BackgroundImage = new Bitmap(redFlag, b.Size);
-            }
+            return mineCount == minesFlagged;
         }
 
-        private void endGameMessage()
+        public void CheckEndGame()
+        {
+            if (AllFlagsProper() || AllSpacesClear())
+            {
+                WinGame();
+            }
+
+        }
+
+        private bool AllSpacesClear()
+        {
+            bool SpacesClear = true;
+            for (var i = 0; i < Height; i++)
+                for (var j = 0; j < Width; j++)
+                    if (buttons[i, j].IsAccessible || IsMine(i, j))
+                    {
+                        SpacesClear = false;
+                    }
+            return SpacesClear;
+
+        }
+        public void Explosion()
+        {
+            ShowAllBombs();
+            EndGameMessage();
+        }
+
+        private void WinGame()
+        {
+            WinMessage();
+            EndGameMessage();
+        }
+
+        private void WinMessage()
+        {
+            MessageBox.Show("YOU WIN!");
+        }
+
+        private void EndGameMessage()
         {
             DialogResult result = MessageBox.Show("New Game?", "Game Over", MessageBoxButtons.YesNo);
-           
+
             if (result == DialogResult.Yes)
             {
                 Application.Restart();
@@ -171,7 +284,7 @@ namespace Minesweeper
             }
         }
 
-        private void showAllBombs()
+        private void ShowAllBombs()
         {
             ForEachCell((i, j) =>
             {
@@ -183,7 +296,7 @@ namespace Minesweeper
             });
         }
 
-        private Color getNumberColor(int val)
+        private Color GetNumberColor(int val)
         {
             Color c = Color.DarkGray;
             switch (val)
@@ -204,22 +317,52 @@ namespace Minesweeper
             return c;
         }
 
-        public bool isMine(int width, int height)
+        public bool IsMine(int height, int width)
         {
 
             return mines[height,width];
         }
 
-        private void createDifficultySelect()
+        private void CreateStartGame()
         {
-            this.toolStrip = new ToolStrip();
+            startButton.Location = new Point(0, 225);
+            startButton.Text = "Start";
+            startButton.Size = new Size(100, 100);
+            startButton.BackColor = Color.BlueViolet;
+            startButton.Click += new EventHandler(start_click);
+
+        }
+
+        private void FlagLabels()
+        {
+            flagsLabel.Location = new Point(0, 325);
+            flagsLeft.Location = new Point(300, 325);
+            flagsLabel.Font = new Font("Arial", 12, FontStyle.Bold);
+            flagsLeft.Font = new Font("Arial", 12, FontStyle.Bold);
+            flagsLabel.AutoSize = true;
+            flagsLeft.AutoSize = true;
+            flagsLabel.Text = "Number of Flags: ";
+            flagsLeft.Text = "" + flagCount;
+        }
+
+        private void start_click(object sender, EventArgs e)
+        {
+            timer.Start();
+            seconds = 0;
+            minutes = 0;
+            tableLayoutPanel1.Enabled = true;
+        }
+
+        private void CreateDifficultySelect()
+        {
+            toolStrip = new ToolStrip();
             difficultyButton = new ToolStripDropDownButton();
             ToolStripDropDown dropDown = new ToolStripDropDown();
-            this.difficultyButton.Text = "Difficulty";
-            this.difficultyButton.Name = "Difficulty";
-            this.difficultyButton.DropDown = dropDown;
-            this.difficultyButton.DropDownDirection = ToolStripDropDownDirection.BelowRight;
-            this.difficultyButton.ShowDropDownArrow = true;
+            difficultyButton.Text = "Difficulty";
+            difficultyButton.Name = "Difficulty";
+            difficultyButton.DropDown = dropDown;
+            difficultyButton.DropDownDirection = ToolStripDropDownDirection.BelowRight;
+            difficultyButton.ShowDropDownArrow = true;
 
             // Declare three buttons, set their foreground color and text, 
             // and add the buttons to the drop-down.
@@ -244,6 +387,29 @@ namespace Minesweeper
                 {difficult ,medium, easy });
 
             toolStrip.Items.Add(difficultyButton);
+        }
+
+        private void timer_handler(object sender, EventArgs e)
+        {
+            seconds++;
+
+            if (seconds == 60)
+            {
+                minutes++;
+                seconds = 0;
+            }
+            string min = minutes.ToString();
+            string sec = seconds.ToString();
+            if ( min.Length<2)
+            {
+                min = "0" + min;
+            }
+            if (sec.Length < 2)
+            {
+                sec = "0" + sec;
+            }
+
+            timerBox.Text = min + ":" + sec;
         }
 
 
