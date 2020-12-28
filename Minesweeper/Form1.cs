@@ -28,7 +28,8 @@ namespace Minesweeper
         //Time
         int seconds = 0;
         int minutes = 0;
-
+        //Interaction with table
+        bool canInteract = false;
 
         public int Height { get; set; }
         public int Width { get; set; }
@@ -40,6 +41,7 @@ namespace Minesweeper
             flagCount = mineCount;
             minesFlagged = 0;
             InitializeComponent();
+            tableLayoutPanel1.Enabled = true;
         }
 
         private void SetHeightWidth()
@@ -116,7 +118,11 @@ namespace Minesweeper
             Button b = (Button)sender;
             Location l = (Location)b.Tag;
 
-            if (e.Button == MouseButtons.Right)
+            if (!canInteract)
+            {
+                MessageBox.Show("You must start the timer in order to play!");
+            }
+            else if (e.Button == MouseButtons.Right)
             {
                 MarkAsFlag(b, l);
             }
@@ -150,11 +156,11 @@ namespace Minesweeper
                 CalculateValues();
                 FlipFirstPanels(b, l, e);
             }
-            int val = values[l.getColumn(), l.getRow()];
+
             //Make panel inaccessible / "flipped"
             buttons[l.getColumn(), l.getRow()].BackColor = Color.LightSlateGray;
             buttons[l.getColumn(), l.getRow()].IsAccessible = false;
-            FlipNeighboringPanels(l.getColumn(), l.getRow());
+            FlipNeighboringPanels(l);
             firstClick = false;
         }
 
@@ -168,12 +174,21 @@ namespace Minesweeper
             }
             else
             {
-                b.BackgroundImage = new Bitmap(redFlag, b.Size); //Mark as a flag
-                flagCount--;
-                flagsLeft.Text = ""+ flagCount;
-                if (IsMine(l.getColumn(), l.getRow()))
+                if (flagCount < 1)
                 {
-                    minesFlagged++;
+                    //Do nothing because there are no more flags to be placed
+                }
+                else
+                {
+                    b.BackgroundImage = new Bitmap(redFlag, b.Size); //Mark as a flag
+                    flagCount--;
+                    CheckEndGameThroughFlags();
+                    flagsLeft.Text = "" + flagCount;
+                    if (IsMine(l.getColumn(), l.getRow()))
+                    {
+                        minesFlagged++;
+                        CheckEndGameThroughFlags();
+                    }
                 }
             }
         }
@@ -194,28 +209,34 @@ namespace Minesweeper
                     buttons[l.getColumn(), l.getRow()].Text = val.ToString();
                     buttons[l.getColumn(), l.getRow()].BackColor = Color.LightSlateGray;
                     buttons[l.getColumn(), l.getRow()].IsAccessible = false;
-                    CheckEndGame();
+                    CheckEndGameThroughPanels();
                 }
             }
         }
 
-        private void FlipNeighboringPanels(int col, int row)
+        private void FlipNeighboringPanels(Location l)
         {
             int val;
 
             //Flip panels that are buttons neighbors through recursion
-            ForEachNeighbor(col, row, (i1, j1) => {
+            ForEachNeighbor(l.getColumn(), l.getRow(), (i1, j1) => {
                 Button b = buttons[i1, j1];
                 val = values[i1, j1];
-                if (!IsMine(i1, j1) && b.IsAccessible && val < 2)
+                if (!IsMine(i1, j1) && b.IsAccessible && val <= 2)
                 {
                     if (val == 0)
                     {
+                        buttons[i1, j1].BackColor = Color.LightSlateGray;
+                        buttons[i1, j1].IsAccessible = false;
+                        FlipNeighboringPanels(new Location(i1, j1));
+                    }
+                    else
+                    {
                         buttons[i1, j1].ForeColor = GetNumberColor(val);
                         buttons[i1, j1].Text = val.ToString();
+                        buttons[i1, j1].BackColor = Color.LightSlateGray;
+                        buttons[i1, j1].IsAccessible = false;   
                     }
-                    buttons[i1, j1].BackColor = Color.LightSlateGray;
-                    buttons[i1, j1].IsAccessible = false;
                 }
             });
         }
@@ -227,13 +248,16 @@ namespace Minesweeper
             return mineCount == minesFlagged;
         }
 
-        public void CheckEndGame()
+        public void CheckEndGameThroughFlags()
         {
-            if (AllFlagsProper() || AllSpacesClear())
-            {
+            if (AllFlagsProper())
                 WinGame();
-            }
+        }
 
+        public void CheckEndGameThroughPanels()
+        {
+            if (AllSpacesClear())
+                WinGame();
         }
 
         private bool AllSpacesClear()
@@ -302,7 +326,7 @@ namespace Minesweeper
             switch (val)
             {
                 case 0:
-                    c =  Color.DarkGray;
+                    c = Color.DarkGray;
                     break;
                 case 1:
                     c = Color.DarkBlue;
@@ -320,7 +344,7 @@ namespace Minesweeper
         public bool IsMine(int height, int width)
         {
 
-            return mines[height,width];
+            return mines[height, width];
         }
 
         private void CreateStartGame()
@@ -330,7 +354,6 @@ namespace Minesweeper
             startButton.Size = new Size(100, 100);
             startButton.BackColor = Color.BlueViolet;
             startButton.Click += new EventHandler(start_click);
-
         }
 
         private void FlagLabels()
@@ -341,8 +364,8 @@ namespace Minesweeper
             flagsLeft.Font = new Font("Arial", 12, FontStyle.Bold);
             flagsLabel.AutoSize = true;
             flagsLeft.AutoSize = true;
-            flagsLabel.Text = "Number of Flags: ";
-            flagsLeft.Text = "" + flagCount;
+            flagsLabel.Text = "Number of Flags:";
+            flagsLeft.Text = " " + flagCount;
         }
 
         private void start_click(object sender, EventArgs e)
@@ -350,7 +373,7 @@ namespace Minesweeper
             timer.Start();
             seconds = 0;
             minutes = 0;
-            tableLayoutPanel1.Enabled = true;
+            canInteract = true;
         }
 
         private void CreateDifficultySelect()
@@ -369,7 +392,7 @@ namespace Minesweeper
             easy = new ToolStripButton();
             easy.Text = "Easy";
             easy.Tag = 0;
-         
+
             medium = new ToolStripButton();
             medium.Text = "Medium";
             medium.Tag = 1;
@@ -379,9 +402,9 @@ namespace Minesweeper
             difficult.Tag = 2;
 
             difficult.Click += new EventHandler(button1_click);
-            medium.Click += new EventHandler(button1_click); 
+            medium.Click += new EventHandler(button1_click);
             easy.Click += new EventHandler(button1_click);
-            
+
 
             difficultyButton.DropDownItems.AddRange(new ToolStripButton[]
                 {difficult ,medium, easy });
@@ -400,7 +423,7 @@ namespace Minesweeper
             }
             string min = minutes.ToString();
             string sec = seconds.ToString();
-            if ( min.Length<2)
+            if (min.Length < 2)
             {
                 min = "0" + min;
             }
