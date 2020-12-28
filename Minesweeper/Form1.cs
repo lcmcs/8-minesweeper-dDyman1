@@ -5,14 +5,6 @@ using System.Windows.Forms;
 namespace Minesweeper
 {
 
-    //check all mines flagged if flag == 0
-    //update flagsLeft text box with increments or decrements
-    // if all mines flagged..game win
-    //for all zero boxes directly connected to first click or zero...
-    //flip till numbered box is hit. While loop..?
-    //Start button push is requisite for game play. 
-    //Message box or prompt type if table is interacted with while disabled 
-    //Let me know if I should implement above^ (so player hits start)
     public partial class Form1 : Form
     {
         private Button[,] buttons;
